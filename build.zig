@@ -24,9 +24,7 @@ pub fn build(b: *std.build.Builder) void {
     obj.linkLibC();
     obj.addIncludePath("vendor/wasm2c/include");
     obj.addIncludePath("artifact");
-    obj.addIncludePath("vendor/wasm2c/share/wabt/wasm2c");
     obj.addCSourceFiles(&.{
-        "vendor/wasm2c/share/wabt/wasm2c/wasm-rt-impl.c",
         "artifact/game.c",
     }, &.{});
     obj.linkSystemLibrary("raylib");

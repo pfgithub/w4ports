@@ -209,6 +209,50 @@ export fn w2c_env_tone(env: *c.struct_w2c_env, frequency: u32, duration: u32, vo
     std.log.info("TODO tone {} {} {} {}", .{frequency, duration, volume, flags});
 }
 
+var wasm_rt_is_initialized_val: bool = false;
+export fn wasm_rt_init() void {
+    wasm_rt_is_initialized_val = true;
+}
+export fn wasm_rt_is_initialized() bool {
+    return wasm_rt_is_initialized_val;
+}
+export fn wasm_rt_free() void {
+    wasm_rt_is_initialized_val = false;
+}
+export fn wasm_rt_trap(trap: c.wasm_rt_trap_t) void {
+    _ = trap;
+    unreachable;
+}
+export fn wasm_rt_allocate_memory(memory: *c.wasm_rt_memory_t, initial_pages: u32, max_pages: u32, is64: bool) void {
+    const alloc = std.heap.c_allocator;
+    const data = alloc.alloc(u8, initial_pages * 65536) catch @panic("oom");
+    // errdefer alloc.free(data);
+    memory.* = .{
+        .data = data.ptr,
+        .pages = initial_pages,
+        .max_pages = max_pages,
+        .size = @intCast(data.len),
+        .is64 = is64,
+    };
+}
+export fn wasm_rt_free_memory(memory: *c.wasm_rt_memory_t) void {
+    const alloc = std.heap.c_allocator;
+    alloc.free(memory.data[0..memory.size]);
+}
+export fn wasm_rt_allocate_funcref_table(table: *c.wasm_rt_funcref_table_t, elements: u32, max_elements: u32) void {
+    const alloc = std.heap.c_allocator;
+    const data = alloc.alloc(c.wasm_rt_funcref_t, elements) catch @panic("oom");
+    //errdefer alloc.free(data);
+    table.* = .{
+        .data = data.ptr,
+        .size = elements,
+        .max_size = max_elements,
+    };
+}
+export fn wasm_rt_free_funcref_table(table: *c.wasm_rt_funcref_table_t) void {
+    const alloc = std.heap.c_allocator;
+    alloc.free(table.data[0..table.size]);
+}
 
 // in place of wasm-rt-impl.c:
 //
